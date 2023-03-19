@@ -1,0 +1,122 @@
+from sys import exit
+from collections import OrderedDict
+import time
+from datetime import datetime
+
+def main():
+    try:
+        file_path = acquisizione()
+        dizionario = struttura_dati(file_path)
+        
+        area = input("Inserire l'area di appartenenza, oppure inserire il carattere '*' per terminare: ")
+        if area != "*":
+            while area != "*":
+                
+                if len(area) == 2 or len(area) == 3:
+                    area = area.upper()
+                    
+                if area in dizionario:
+                    stampa(area, dizionario)
+                else:
+                    print("Ops l'area che hai inserito non è presente nell'archivio...")
+                    
+                print("")
+                area = input("Inserire l'area di appartenenza, oppure inserire il carattere '*' per terminare: ")
+        print("Arrivederci!")
+        
+    except Exception as msg:
+        exit("E' stata generata la seguente eccezione: %s" %msg)
+
+
+def acquisizione():
+    """_La funzione acquisisce l'input dall'utente_
+
+    Returns:
+        _Nome_file_: _Il nome del file che sarà passato al main per tentare l'apertura_
+    """
+    print("Incollare il percorso del file da leggere: ")
+    nome_file = input("")
+    
+    #nome_file = nome_file + ".csv"
+    
+    return nome_file
+
+
+def struttura_dati(file_path):
+    #creo un dizionario che contiene tutte le aree.
+    try:
+        inFile = open(file_path, "r", encoding="utf-8")
+        try:
+            aree = {}
+    
+            for riga in inFile:
+                riga0 = []
+                campi = []
+                local_dizio = {}
+                lista = []
+                
+                campi = riga.strip().split(";")
+                
+                riga0 = campi[0].split(" ")
+                
+                lista.append(campi[0])
+                lista.append(campi[2])
+                
+                if len(riga0) == 5:
+                    if riga0[2] in aree:
+                        aree[riga0[2]][campi[1]] = lista
+                    else:
+                        aree[riga0[2]] = local_dizio
+                    if riga0[4] in aree:
+                        aree[riga0[4]][campi[1]] = lista
+                    else:
+                        aree[riga0[4]] = local_dizio
+                    
+                elif len(riga0) == 3:
+                    if riga0[2] in aree:
+                        if riga0[2] == "M&C":
+                            aree["M&C"][campi[1]] = lista # problema
+                        elif riga0[2] == "IT":
+                            aree["IT"][campi[1]] = lista
+                        else:                        
+                            aree[riga0[2]][campi[1]] = lista
+                    else:
+                        aree[riga0[2]] = local_dizio
+                
+                elif len(riga0) == 2:
+                    for area in aree:  # non è necessario vereficare se nel dizionario è presente l'area
+                                       # visto che la prima occorrenza delle riunioni generali avviene dopo
+                                       # che tutte le aree sono già state registrate 
+                        aree[area][campi[1]] = lista
+                        
+                      
+            return aree
+
+        finally:
+            inFile.close
+    
+    except FileNotFoundError as msg:
+        exit("Ops, il file non è stato trovato... E' stata generata la seguente eccezione %s" %msg)
+    
+def stampa(area, dizionario):
+    print("")
+    print("Ecco le riunioni relative all'area %s! " %area)
+    
+    local_dizio = dizionario[area]
+    sorted_dizio = OrderedDict(sorted(local_dizio.items(), key = lambda x:datetime.strptime(x[0], '%d/%m/%Y')))
+    
+    print("")
+    
+    for chiave, valore in sorted_dizio.items():
+        data = chiave.split("/")
+        data_riunione = datetime(int(data[2]), int(data[1]), int(data[0]))
+        data_oggi = datetime.now()
+        
+        #print(data_riunione, data_oggi)
+       
+        if data_riunione > data_oggi: 
+            print("{:<30} {:^30} {} ".format(valore[0], chiave, valore[1]))
+    
+    return
+
+main()
